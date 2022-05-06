@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Brush", "Assembly-CSharp.csproj", "{3ABA823B-8C2A-4926-463E-BB0DA48C0615}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembly-CSharp", "Assembly-CSharp.csproj", "{3ABA823B-8C2A-4926-463E-BB0DA48C0615}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
