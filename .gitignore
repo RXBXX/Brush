@@ -1,0 +1,14 @@
+Assets/Arts
+Assets/CommonRes
+Assets/Script/Lua/Common
+Library
+Temp
+Logs
+obj/
+Bundles/
+*.csproj
+.vs/
+Build/
+*.sln
+Assets/Wwise/Editor
+Library
