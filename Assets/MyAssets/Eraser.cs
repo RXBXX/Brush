@@ -83,16 +83,17 @@ namespace ScriptEraser
             RaycastHit hitInfo;
             var ray = stageCamera.ScreenPointToRay(Input.mousePosition);
             Debug.DrawRay(ray.origin, ray.direction * 1000, Color.red);
-            if (Physics.Raycast(ray, out hitInfo, 1000))
+            if (Physics.Raycast(ray, out hitInfo, 2000))
             {
                 Debug.Log(hitInfo.collider.name);
                 if (hitInfo.collider.name.Equals(this.name))
                 {
                     var posPoint = hitInfo.point;
-                    //需要canvas的z轴位置为0
-                    pos = RectTransformUtility.WorldToScreenPoint(stageCamera, posPoint);
-                    RectTransformUtility.ScreenPointToLocalPointInRectangle(_rt, posPoint, null, out pos);
-                    Debug.Log(pos);
+                    //世界坐标转换成屏幕坐标
+                    posPoint = RectTransformUtility.WorldToScreenPoint(stageCamera, posPoint);
+                    //屏幕坐标转换成recttransform的本地坐标
+                    //cam 参数应该是与屏幕点关联的相机。对于设置为 Screen Space - Overlay 模式的 Canvas 中的 RectTransform，cam 参数应为 null。
+                    RectTransformUtility.ScreenPointToLocalPointInRectangle(_rt, posPoint, stageCamera, out pos);
                     pos = pos + new Vector2(_rt.rect.width, _rt.rect.height) / 2;
                     if (_haveLastPos && Vector2.Distance(pos, _lastPos) > 2)
                     {
@@ -121,10 +122,9 @@ namespace ScriptEraser
             var pos = Vector2.zero;
             //获取相对于该贴图的像素纹理坐标
             var posPoint = Input.mousePosition;
-                    //需要canvas的z轴位置为0
                     pos = RectTransformUtility.WorldToScreenPoint(stageCamera, posPoint);
+                    //cam 参数应该是与屏幕点关联的相机。对于设置为 Screen Space - Overlay 模式的 Canvas 中的 RectTransform，cam 参数应为 null。
                     RectTransformUtility.ScreenPointToLocalPointInRectangle(_rt, posPoint, null, out pos);
-                    Debug.Log(pos);
                     pos = pos + new Vector2(_rt.rect.width, _rt.rect.height) / 2;
                     if (_haveLastPos && Vector2.Distance(pos, _lastPos) > 2)
                     {
