@@ -5,18 +5,28 @@ namespace ScriptEraser
 {
     public class Eraser : MonoBehaviour
     {
+        [SerializeField]
+        private Texture texture;                    //ui绘制的贴图
+        [SerializeField]
+        private Texture brush;
+        [SerializeField]
+        [Range(0, 1)]
+        private float brushSize = 0.4f;              //笔刷宽度
+
         private Material _mat;                      //要使用的材质
         private RectTransform _rt;                   //要被擦除的ui
-        public Texture texture;                    //ui绘制的贴图
-        public Texture brush;
         private RenderTexture _after;               //为材质提供的实时贴图
         private RenderTexture _before;              //过渡贴图变量
-        public bool _active = false;
+        [SerializeField]
+        private bool _active = false;
         private int _frequency = 8;
-        public Camera stageCamera;                 //UI渲染摄像机，基于这个摄像机做触摸点检测
+        [SerializeField]
+        private Camera stageCamera;                 //UI渲染摄像机，基于这个摄像机做触摸点检测
         private float _threshold = 0.8f;            //像素点擦除比例大于这个值就认为擦除成功
         private Vector2 _lastPos;
         private bool _haveLastPos = false;
+        [SerializeField]
+        private Canvas canvas;
 
         private void Start()
         {
@@ -37,6 +47,7 @@ namespace ScriptEraser
             _mat.SetTexture("_Brush", brush);           //初始绘制贴图
             _mat.SetInt("_BrushWidth", brush.width);           //初始绘制贴图
             _mat.SetInt("_BrushHeight", brush.height);           //初始绘制贴图
+            _mat.SetFloat("_BrushSize", brushSize);
         }
         private void Update()
         {
@@ -45,37 +56,10 @@ namespace ScriptEraser
             }
             if (Input.GetMouseButton(0))
             {
-                var pos = Vector2.zero;
-                //获取相对于该贴图的像素纹理坐标
-                RaycastHit hitInfo;
-                var ray = stageCamera.ScreenPointToRay(Input.mousePosition);
-                //Debug.DrawRay(ray.origin, ray.direction *100, Color.red);
-                if (Physics.Raycast(ray, out hitInfo, 50))
-                {
-                    if (hitInfo.collider.name.Equals(this.name))
-                    {
-                        var posPoint = hitInfo.point;
-                        RectTransformUtility.ScreenPointToLocalPointInRectangle(_rt, posPoint, null, out pos);
-                        pos = pos + new Vector2(_rt.rect.width, _rt.rect.height) / 2;
-                        if (_haveLastPos && Vector2.Distance(pos, _lastPos) > 2)
-                        {
-                            var step = Vector2.Distance(pos, _lastPos) / 2;
-                            var curPos = _lastPos;
-                            while (Vector2.Distance(curPos, pos) > 2)
-                            {
-                                _draw((int)curPos.x, (int)curPos.y);
-                                curPos.x = (pos.x - _lastPos.x) / step + curPos.x;
-                                curPos.y = (pos.y - _lastPos.y) / step + curPos.y;
-                            }
-                        }
-                        else
-                        {
-                            _draw((int)pos.x, (int)pos.y);
-                        }
-                        _haveLastPos = true;
-                        _lastPos = pos;
-                    }
-                    }
+                if(canvas.renderMode == RenderMode.WorldSpace)
+                updateWorldSpace();
+                else if(canvas.renderMode == RenderMode.ScreenSpaceOverlay)
+                updateScreenSpace();
                 }
             else if(Input.GetMouseButtonUp(0))
                 {
@@ -89,6 +73,76 @@ namespace ScriptEraser
             _mat.SetInt("_CenterY", posY);
             Graphics.Blit(_before, _after, _mat);
             Graphics.Blit(_after, _before);
+        }
+
+        //Canvas RendererMode等于WorldSpace
+        private void updateWorldSpace()
+        {
+            var pos = Vector2.zero;
+            //获取相对于该贴图的像素纹理坐标
+            RaycastHit hitInfo;
+            var ray = stageCamera.ScreenPointToRay(Input.mousePosition);
+            Debug.DrawRay(ray.origin, ray.direction * 1000, Color.red);
+            if (Physics.Raycast(ray, out hitInfo, 1000))
+            {
+                Debug.Log(hitInfo.collider.name);
+                if (hitInfo.collider.name.Equals(this.name))
+                {
+                    var posPoint = hitInfo.point;
+                    //需要canvas的z轴位置为0
+                    pos = RectTransformUtility.WorldToScreenPoint(stageCamera, posPoint);
+                    RectTransformUtility.ScreenPointToLocalPointInRectangle(_rt, posPoint, null, out pos);
+                    Debug.Log(pos);
+                    pos = pos + new Vector2(_rt.rect.width, _rt.rect.height) / 2;
+                    if (_haveLastPos && Vector2.Distance(pos, _lastPos) > 2)
+                    {
+                        var step = Vector2.Distance(pos, _lastPos) / 2;
+                        var curPos = _lastPos;
+                        while (Vector2.Distance(curPos, pos) > 2)
+                        {
+                            _draw((int)curPos.x, (int)curPos.y);
+                            curPos.x = (pos.x - _lastPos.x) / step + curPos.x;
+                            curPos.y = (pos.y - _lastPos.y) / step + curPos.y;
+                        }
+                    }
+                    else
+                    {
+                        _draw((int)pos.x, (int)pos.y);
+                    }
+                    _haveLastPos = true;
+                    _lastPos = pos;
+                }
+            }
+    }
+
+        //Canvas RendererMode等于ScreenSpace
+        private void updateScreenSpace()
+        {
+            var pos = Vector2.zero;
+            //获取相对于该贴图的像素纹理坐标
+            var posPoint = Input.mousePosition;
+                    //需要canvas的z轴位置为0
+                    pos = RectTransformUtility.WorldToScreenPoint(stageCamera, posPoint);
+                    RectTransformUtility.ScreenPointToLocalPointInRectangle(_rt, posPoint, null, out pos);
+                    Debug.Log(pos);
+                    pos = pos + new Vector2(_rt.rect.width, _rt.rect.height) / 2;
+                    if (_haveLastPos && Vector2.Distance(pos, _lastPos) > 2)
+                    {
+                        var step = Vector2.Distance(pos, _lastPos) / 2;
+                        var curPos = _lastPos;
+                        while (Vector2.Distance(curPos, pos) > 2)
+                        {
+                            _draw((int)curPos.x, (int)curPos.y);
+                            curPos.x = (pos.x - _lastPos.x) / step + curPos.x;
+                            curPos.y = (pos.y - _lastPos.y) / step + curPos.y;
+                        }
+                    }
+                    else
+                    {
+                        _draw((int)pos.x, (int)pos.y);
+                    }
+                    _haveLastPos = true;
+                    _lastPos = pos;
         }
 
         public void SetActive(bool active)
